@@ -1,6 +1,4 @@
-#include <SoftwareSerial.h>
 
-SoftwareSerial mySerial(10, 11); // RX, TX
 
 void setup() 
   {
@@ -9,9 +7,7 @@ void setup()
 
     pinMode(9,OUTPUT); digitalWrite(9,HIGH);
 
-    Serial.println("Enter AT commands:");
-
-    mySerial.begin(38400);
+    Serial1.begin(38400);
 
   }
 
@@ -19,12 +15,12 @@ void loop()
 
   {
 
-    if (mySerial.available())
+    if (Serial1.available())
 
-    Serial.write(mySerial.read());
+    Serial.write(Serial1.read());
 
     if (Serial.available())
 
-    mySerial.write(Serial.read());
+    Serial1.write(Serial.read());
 
   }
