@@ -12,8 +12,8 @@ int SPEED = 4;
 #define MOTOR_PIN_3 10
 #define MOTOR_PIN_4 11
 
-String tempString = "";
-String userInputString = "";
+String tempString = "0000";
+String userInputString = "0000";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //PID gain and limit settings
@@ -38,7 +38,7 @@ int pid_max_yaw = 400;                     //Maximum output of the PID-controlle
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 volatile int receiver_input_channel_1, receiver_input_channel_2, receiver_input_channel_3, receiver_input_channel_4;
 int esc_1, esc_2, esc_3, esc_4;
-int throttle;
+int throttle = 1100;
 float roll_level_adjust, pitch_level_adjust;
 
 unsigned long timer_channel_1, timer_channel_2, timer_channel_3, timer_channel_4, esc_timer, esc_loop_timer;
@@ -136,9 +136,9 @@ void loop(){
   */
 
   if (userInputString.charAt(3) != '0') {
-    throttle += (userInputString.charAt(3) == '1' ? 1 : -1) * 1;
-    if (throttle < 0) { throttle = 0; }
-    if (throttle > 1800) { throttle = 0; }
+    throttle += (userInputString.charAt(3) == '1' ? 1 : -1) * 2;
+    if (throttle < 1100) { throttle = 1100; }
+    if (throttle > 1800) { throttle = 1800; }
   }
 
   if (userInputString.charAt(0) != '0') {
@@ -147,7 +147,7 @@ void loop(){
     analogWrite(MOTOR_PIN_3, 0);
     analogWrite(MOTOR_PIN_4, 0);
 
-    Serial.println("SAFETY SWITCH!!! SHUTTING OFF!!!")
+    Serial.println("SAFETY SWITCH!!! SHUTTING OFF!!!");
     while (1) {}
   }
 
@@ -179,15 +179,15 @@ void loop(){
     // esc_3 = throttle - pid_output_roll; //Calculate the pulse for esc 3 (rear-left - CCW)
     // esc_4 = throttle - pid_output_roll; //Calculate the pulse for esc 4 (front-left - CW)
 
-    esc_1 = throttle - pid_output_yaw; //Calculate the pulse for esc 1 (front-right - CCW)
-    esc_2 = throttle + pid_output_yaw; //Calculate the pulse for esc 2 (rear-right - CW)
-    esc_3 = throttle - pid_output_yaw; //Calculate the pulse for esc 3 (rear-left - CCW)
-    esc_4 = throttle + pid_output_yaw; //Calculate the pulse for esc 4 (front-left - CW)
+    // esc_1 = throttle - pid_output_yaw; //Calculate the pulse for esc 1 (front-right - CCW)
+    // esc_2 = throttle + pid_output_yaw; //Calculate the pulse for esc 2 (rear-right - CW)
+    // esc_3 = throttle - pid_output_yaw; //Calculate the pulse for esc 3 (rear-left - CCW)
+    // esc_4 = throttle + pid_output_yaw; //Calculate the pulse for esc 4 (front-left - CW)
 
-    // esc_1 = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 1 (front-right - CCW)
-    // esc_2 = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 2 (rear-right - CW)
-    // esc_3 = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 3 (rear-left - CCW)
-    // esc_4 = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 4 (front-left - CW)
+    esc_1 = throttle - pid_output_pitch + pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 1 (front-right - CCW)
+    esc_2 = throttle + pid_output_pitch + pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 2 (rear-right - CW)
+    esc_3 = throttle + pid_output_pitch - pid_output_roll - pid_output_yaw; //Calculate the pulse for esc 3 (rear-left - CCW)
+    esc_4 = throttle - pid_output_pitch - pid_output_roll + pid_output_yaw; //Calculate the pulse for esc 4 (front-left - CW)
 
     if (esc_1 < 1100) esc_1 = 1100;                                         //Keep the motors running.
     if (esc_2 < 1100) esc_2 = 1100;                                         //Keep the motors running.
@@ -224,10 +224,10 @@ void loop(){
   // ===========================================
 
   // Write speeds
-  // analogWrite(MOTOR_PIN_1, esc_1 == 1000 ? 0 : map(esc_1, 1100, 1800, 60, 180));
-  // analogWrite(MOTOR_PIN_2, esc_2 == 1000 ? 0 : map(esc_2, 1100, 1800, 60, 180));
-  // analogWrite(MOTOR_PIN_3, esc_3 == 1000 ? 0 : map(esc_3, 1100, 1800, 0, 110));
-  // analogWrite(MOTOR_PIN_4, esc_4 == 1000 ? 0 : map(esc_4, 1100, 1800, 0, 110));
+  analogWrite(MOTOR_PIN_1, esc_1 == 1000 ? 0 : map(esc_1, 1100, 1800, 60, 180));
+  analogWrite(MOTOR_PIN_2, esc_2 == 1000 ? 0 : map(esc_2, 1100, 1800, 60, 180));
+  analogWrite(MOTOR_PIN_3, esc_3 == 1000 ? 0 : map(esc_3, 1100, 1800, 0, 110));
+  analogWrite(MOTOR_PIN_4, esc_4 == 1000 ? 0 : map(esc_4, 1100, 1800, 0, 110));
 
 }
 
