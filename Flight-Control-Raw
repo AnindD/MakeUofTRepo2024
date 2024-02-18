@@ -1,21 +1,6 @@
-///////////////////////////////////////////////////////////////////////////////////////
-//Terms of use
-///////////////////////////////////////////////////////////////////////////////////////
-//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//THE SOFTWARE.
-///////////////////////////////////////////////////////////////////////////////////////
-//Safety note
-///////////////////////////////////////////////////////////////////////////////////////
-//Always remove the propellers and stay away from the motors unless you 
-//are 100% certain of what you are doing.
-///////////////////////////////////////////////////////////////////////////////////////
-
 #include <Wire.h>                          //Include the Wire.h library so we can communicate with the gyro.
+#include "MPU9250.h"
+MPU9250 mpu;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //PID gain and limit settings
@@ -53,30 +38,34 @@ float pid_i_mem_roll, pid_roll_setpoint, gyro_roll_input, pid_output_roll, pid_l
 float pid_i_mem_pitch, pid_pitch_setpoint, gyro_pitch_input, pid_output_pitch, pid_last_pitch_d_error;
 float pid_i_mem_yaw, pid_yaw_setpoint, gyro_yaw_input, pid_output_yaw, pid_last_yaw_d_error;
 float angle_roll_acc, angle_pitch_acc, angle_pitch, angle_roll;
-boolean gyro_angles_set;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Setup routine
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup(){
-  //Serial.begin(57600);
   start = 0;                                                                //Set start back to zero.
   Wire.begin();                                                             //Start the I2C as master.
+  Serial1.begin(115200);
+  Serial.begin(115200);
+ 
 
-  TWBR = 12;                                                                //Set the I2C clock speed to 400kHz.
-
-  //Arduino (Atmega) pins default to inputs, so they don't need to be explicitly declared as inputs.
-  DDRD |= B11110000;                                                        //Configure digital poort 4, 5, 6 and 7 as output.
-  DDRB |= B00110000;                                                        //Configure digital poort 12 and 13 as output.
-
-  //Use the led on the Arduino for startup indication.
-  digitalWrite(12,HIGH);                                                    //Turn on the warning led.
-
-  set_gyro_registers();                                                     //Set the specific gyro registers.
-
-  
-  //When everything is done, turn off the led.
-  digitalWrite(12,LOW);                                                     //Turn off the warning led.
+  if (!mpu.setup(0x68)) {  // change to your own address
+      while (1) {
+          Serial.println("MPU connection failed. Please check your connection with `connection_check` example.");
+          delay(5000);
+      }
+  }
+    // calibrate anytime you want to
+  Serial.println("Starting up now!"); 
+  mpu.verbose(true);
+  delay(5000);
+  mpu.setAccBias(25.90, 21.51, 27.62); 
+  mpu.setGyroBias(0.09,1.37,0.84); 
+  mpu.setMagBias(0,0,0);
+  mpu.setMagScale(0,0,0); 
+  mpu.calibrateAccelGyro();
+  //print_calibration();
+  mpu.verbose(false);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Main program loop
@@ -97,21 +86,6 @@ void loop(){
   
   //Gyro angle calculations
   //0.0000611 = 1 / (250Hz / 65.5)
-  angle_pitch += gyro_pitch * 0.0000611;                                    //Calculate the traveled pitch angle and add this to the angle_pitch variable.
-  angle_roll += gyro_roll * 0.0000611;                                      //Calculate the traveled roll angle and add this to the angle_roll variable.
-
-  //0.000001066 = 0.0000611 * (3.142(PI) / 180degr) The Arduino sin function is in radians
-  angle_pitch -= angle_roll * sin(gyro_yaw * 0.000001066);                  //If the IMU has yawed transfer the roll angle to the pitch angel.
-  angle_roll += angle_pitch * sin(gyro_yaw * 0.000001066);                  //If the IMU has yawed transfer the pitch angle to the roll angel.
-
-  
-  //Place the MPU-6050 spirit level and note the values in the following two lines for calibration.
-  angle_pitch_acc -= 0.0;                                                   //Accelerometer calibration value for pitch.
-  angle_roll_acc -= 0.0;                                                    //Accelerometer calibration value for roll.
-  
-  angle_pitch = angle_pitch * 0.9996 + angle_pitch_acc * 0.0004;            //Correct the drift of the gyro pitch angle with the accelerometer pitch angle.
-  angle_roll = angle_roll * 0.9996 + angle_roll_acc * 0.0004;               //Correct the drift of the gyro roll angle with the accelerometer roll angle.
-
   pitch_level_adjust = angle_pitch * 15;                                    //Calculate the pitch angle correction
   roll_level_adjust = angle_roll * 15;                                      //Calculate the roll angle correction
 
@@ -125,7 +99,6 @@ void loop(){
 
     angle_pitch = angle_pitch_acc;                                          //Set the gyro pitch angle equal to the accelerometer pitch angle when the quadcopter is started.
     angle_roll = angle_roll_acc;                                            //Set the gyro roll angle equal to the accelerometer roll angle when the quadcopter is started.
-    gyro_angles_set = true;                                                 //Set the IMU started flag.
 
     //Reset the PID controllers for a bumpless start.
     pid_i_mem_roll = 0;
